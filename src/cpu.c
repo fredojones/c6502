@@ -53,12 +53,56 @@ void cpurun(cpu_state *cpu)
 			if (op2 == 0)
 				cpu->flags ^= 0x2;
 			break;
+		case 0xA5:	// Zero Page
+			op2 = nextbyte(cpu);
+			cpu->a = cpu->memory[op2];
+			break;
+		case 0xB5:	// Zero Page,X
+			op2 = nextbyte(cpu);
+			cpu->a = cpu->memory[op2 + cpu->x];
+			break;
+		case 0xAD:	// Absolute
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			cpu->a = cpu->memory[absd(op2, op3)];
+			break;
+		case 0xBD:	// Absolute,X
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			cpu->a = cpu->memory[absx(cpu, op2, op3)];
+			break;
+		case 0xB9:	// Absolute,Y
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			cpu->a = cpu->memory[absy(cpu, op2, op3)];
+			break;
+		case 0xA1:	// Indirect,X
+			op2 = nextbyte(cpu);
+			cpu->a = cpu->memory[indx(cpu, op2)];
+			break;
+		case 0xB1:	// Indirect,Y
+			op2 = nextbyte(cpu);
+			cpu->a = cpu->memory[indx(cpu, op2)];
+			break;
 		// LDX
 		case 0xA2:	// Immediate
 			op2 = nextbyte(cpu);
 			cpu->x = op2;
 			if (op2 == 0)
 				cpu->flags ^= 0x2;
+			break;
+		case 0xA6:	// Zero Page
+			op2 = nextbyte(cpu);
+			cpu->x = cpu->memory[op2];
+			break;
+		case 0xB6:	// Zero Page,Y
+			op2 = nextbyte(cpu);
+			cpu->x = cpu->memory[op2 + cpu->y];
+			break;
+		case 0xAE:	// Absolute
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			cpu->x = cpu->memory[absd(op2, op3)];
+			break;
+		case 0xBE:	// Absolute,Y
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			cpu->x = cpu->memory[absy(cpu, op2, op3)];
 			break;
 		// LDY
 		case 0xA0:	// Immediate
@@ -67,7 +111,23 @@ void cpurun(cpu_state *cpu)
 			if (op2 == 0)
 				cpu->flags ^= 0x2;
 			break;
-
+		case 0xA4:	// Zero Page
+			op2 = nextbyte(cpu);
+			cpu->y = cpu->memory[op2];
+			break;
+		case 0xB4:	// Zero Page,X
+			op2 = nextbyte(cpu);
+			cpu->y = cpu->memory[op2 + cpu->x];
+			break;
+		case 0xAC:	// Absolute
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			cpu->y = cpu->memory[absd(op2, op3)];
+			break;
+		case 0xBC:	// Absolute,X
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			cpu->y = cpu->memory[absx(cpu, op2, op3)];
+			break;
+	
 		// TAX
 		case 0xAA:
 			cpu->x = cpu->a;
