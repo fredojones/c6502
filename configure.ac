@@ -9,6 +9,7 @@ ${CFLAGS=""}
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_CC_C_O
 
 # Checks for libraries.
 
