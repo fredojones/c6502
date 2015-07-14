@@ -1,9 +1,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "cpu.h"
+#include "utils.h"
 
-/* convert LSB (op1) and MSB (op2) to little endian int */
-#define litend(op1, op2) (((op2) << 8) | (op1))
 
 /* cpurun:  execute next logical set of instructions; for multi-byte
  * instructions, this will increment the PC multiple times */
@@ -24,6 +23,7 @@ void cpurun(cpu_state *cpu)
 			else
 				cpu->flags &= ~0x1;
 
+			// set sign bit if the result is negative
 			if (res > 0x7F)
 				cpu->flags |= 0x80;
 			else

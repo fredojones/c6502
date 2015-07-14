@@ -7,6 +7,7 @@
 #include "utils.h"
 
 #define MAXINPUT	1000	/* max input length read */
+#define PCINIT		0x0600	/* where the program will begin in memory */
 
 
 int main(int argc, char *argv[])
@@ -18,7 +19,9 @@ int main(int argc, char *argv[])
 	FILE *fp;				/* pointer to object file */
 
 	cpu_state *cpu = malloc(sizeof(cpu_state));
-	cpu->flags = 0x20; /* set unused bit */
+	cpu->flags = 0x20;			/* set unused bit */
+	cpu->s = 0xFF;				/* initialize stack pointer */
+	cpu->pc = PCINIT;
 
 	/* parse command line arguments */
 	for (int i = 0; i < argc; ++i) {
@@ -26,9 +29,8 @@ int main(int argc, char *argv[])
 			if (i == argc - 1) {
 				fputs("error:  -f requires filepath argument\n", stderr);
 				exit(EXIT_FAILURE);
-			} else {
+			} else
 				filepath = argv[++i];
-			}
 		}
 
 		if (!strcmp(argv[i], "-d"))
@@ -58,7 +60,7 @@ int main(int argc, char *argv[])
 		}
 
 		// Reset program counter
-		cpu->pc = 0;
+		cpu->pc = PCINIT;
 
 		// Execute program
 		while (cpu->pc < 0xFFFF) {
