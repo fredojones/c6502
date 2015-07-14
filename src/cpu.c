@@ -19,10 +19,15 @@ void cpurun(cpu_state *cpu)
 			// set carry bit if we overflow uint8_t
 			if ((res = cpu->a + cpu->memory[++(cpu->pc)]) > 0xFF) {
 				res -= 0x100;
-				cpu->c = 1;
+				cpu->flags |= 0x1;
 			}
 			else
-				cpu->c = 0;
+				cpu->flags &= ~0x1;
+
+			if (res > 0x7F)
+				cpu->flags |= 0x80;
+			else
+				cpu->flags &= ~0x80;
 
 			cpu->a = res;
 			break;
@@ -31,16 +36,22 @@ void cpurun(cpu_state *cpu)
 		case 0xA9:	// Immediate
 			op2 = cpu->memory[++(cpu->pc)];
 			cpu->a = op2;
+			if (op2 == 0)
+				cpu->flags ^= 0x2;
 			break;
 		// LDX
 		case 0xA2:	// Immediate
 			op2 = cpu->memory[++(cpu->pc)];
 			cpu->x = op2;
+			if (op2 == 0)
+				cpu->flags ^= 0x2;
 			break;
 		// LDY
 		case 0xA0:	// Immediate
 			op2 = cpu->memory[++(cpu->pc)];
 			cpu->y = op2;
+			if (op2 == 0)
+				cpu->flags ^= 0x2;
 			break;
 
 		// TAX
@@ -88,36 +99,38 @@ void cpurun(cpu_state *cpu)
 
 		// CLC
 		case 0x18:
-			cpu->c = 0;
+			cpu->flags &= ~0x1;
 			break;
 		// SEC
 		case 0x38:
-			cpu->c = 1;
+			cpu->flags |= 0x1;
 			break;
 		// CLI
 		case 0x58:
-			cpu->i = 0;
+			cpu->flags &= ~0x4;
 			break;
 		// SEI
 		case 0x78:
-			cpu->i = 1;
+			cpu->flags |= 0x4;
 			break;
 		// CLV
 		case 0xB8:
-			cpu->o = 0;
+			cpu->flags &= ~0x40;
 			break;
 		// CLD
 		case 0xD8:
-			cpu->d = 0;
+			cpu->flags &= ~0x8;
 			break;
 		// SED
 		case 0xF8:
-			cpu->d = 1;
+			cpu->flags |= 0x8;
 			break;
 
 		// BRK
 		case 0x00:
-			puts("Hit BRK\n");
+			puts("Hit BRK\n"); // for debugging
+			cpu->flags |= 0x10;
+			cpu->pc++;
 			break;
 	}
 

@@ -9,7 +9,7 @@ typedef struct {
 	uint16_t pc;
 
 	/* flags */
-	uint8_t c, i, o, d;
+	uint8_t flags; /* NV BDIZC */
 
 	/* RAM */
 	uint8_t memory[MEMLIMIT];

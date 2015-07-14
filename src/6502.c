@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "cpu.h"
+#include "utils.h"
 
 #define MAXINPUT	1000	/* max input length read */
 
@@ -17,6 +18,7 @@ int main(int argc, char *argv[])
 	FILE *fp;				/* pointer to object file */
 
 	cpu_state *cpu = malloc(sizeof(cpu_state));
+	cpu->flags = 0x20; /* set unused bit */
 
 	/* parse command line arguments */
 	for (int i = 0; i < argc; ++i) {
@@ -41,10 +43,11 @@ int main(int argc, char *argv[])
 
 	if (!object_mode) {
 		/* parse input as series of whitespace-seperated hex byte strings */
-		char *ins;			/* character string in hex representing opcode */
-		uint8_t op;			/* integer opcode */
+		char *ins = malloc(20);	/* character string in hex representing opcode */
+		uint8_t op;				/* integer opcode */
 		//int bytes = 0;		/* number of bytes read */
 
+		// TODO limit fscanf at 20 chars
 		while (fscanf(fp, "%s ", ins) != EOF) {
 			op = (uint8_t) strtol(ins, NULL, 16);
 
@@ -61,14 +64,22 @@ int main(int argc, char *argv[])
 		while (cpu->pc < 0xFFFF) {
 			/* if in debug mode, step through next logical instruction */
 			if (debug_mode) {
-				printf("A:%02X\nX:%02X\nY:%02X\nP:%02X\nS:%02X\nPC:%04X\n\n",
-						cpu->a, cpu->x, cpu->y, cpu->p, cpu->s, cpu->pc);
+				char *s = malloc(10);
+				tobstr(s, cpu->flags, 8);
 
+				printf("A:%02X\tX:%02X\tY:%02X\tP:%02X\tS:%02X\n"
+					   "Flags:\tNV BDIZC\n"
+					   "\t%8s\n"
+					   "PC:%04X\n\n",
+						cpu->a, cpu->x, cpu->y, cpu->p, cpu->s,
+						s, cpu->pc);
+
+
+				// display memory address at location specified
 				char *addr = malloc(MAXINPUT);
 				uint16_t addrp;
 
 				fgets(addr, MAXINPUT, stdin);
-				// display memory address at location specified
 				if (addr[0] == ':') {
 					addr++;	/* skip the colon */
 
