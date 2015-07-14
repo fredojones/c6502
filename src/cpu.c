@@ -15,40 +15,59 @@ void cpurun(cpu_state *cpu)
 	switch (op) {
 		// ADC
 		case 0x69:	// Immediate
-			// set carry bit if we overflow uint8_t
-			if ((res = cpu->a + cpu->memory[++(cpu->pc)]) > 0xFF) {
-				res -= 0x100;
-				cpu->flags |= 0x1;
-			}
-			else
-				cpu->flags &= ~0x1;
-
-			// set sign bit if the result is negative
-			if (res > 0x7F)
-				cpu->flags |= 0x80;
-			else
-				cpu->flags &= ~0x80;
-
-			cpu->a = res;
+			op2 = nextbyte(cpu);
+			adc(cpu, op2);
+			break;
+		case 0x65:	// Zero Page
+			op2 = cpu->memory[nextbyte(cpu)];
+			adc(cpu, op2);
+			break;
+		case 0x75:	// Zero Page,X
+			op2 = cpu->memory[nextbyte(cpu) + cpu->x];
+			adc(cpu, op2);
+			break;
+		case 0x6D:	// Absolute
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			adc(cpu, cpu->memory[litend(op2, op3)]);
+			break;
+		case 0x7D:	// Absolute,X
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			adc(cpu, cpu->memory[litend(op2, op3) + cpu->x]);
+			break;
+		case 0x79:	// Absolute,Y
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			adc(cpu, cpu->memory[litend(op2, op3) + cpu->y]);
+			break;
+		case 0x61:	// Indirect,X
+			op2 = nextbyte(cpu);
+			op3 = cpu->memory[op2 + cpu->x];
+			op2 = cpu->memory[op2 + cpu->x + 1];
+			adc(cpu, cpu->memory[litend(op3, op2)]);
+			break;
+		case 0x71:	// Indirect,Y
+			op2 = nextbyte(cpu);
+			op3 = cpu->memory[op2];
+			op2 = cpu->memory[op2 + 1];
+			adc(cpu, cpu->memory[litend(op3, op2) + cpu->y]);
 			break;
 
 		// LDA
 		case 0xA9:	// Immediate
-			op2 = cpu->memory[++(cpu->pc)];
+			op2 = nextbyte(cpu);
 			cpu->a = op2;
 			if (op2 == 0)
 				cpu->flags ^= 0x2;
 			break;
 		// LDX
 		case 0xA2:	// Immediate
-			op2 = cpu->memory[++(cpu->pc)];
+			op2 = nextbyte(cpu);
 			cpu->x = op2;
 			if (op2 == 0)
 				cpu->flags ^= 0x2;
 			break;
 		// LDY
 		case 0xA0:	// Immediate
-			op2 = cpu->memory[++(cpu->pc)];
+			op2 = nextbyte(cpu);
 			cpu->y = op2;
 			if (op2 == 0)
 				cpu->flags ^= 0x2;
@@ -89,12 +108,64 @@ void cpurun(cpu_state *cpu)
 
 		// STA
 		case 0x85:	// Zero Page
+			op2 = nextbyte(cpu);
+			cpu->memory[op2] = cpu->a;
+			break;
+		case 0x95:	// Zero Page,X
+			op2 = nextbyte(cpu);
+			cpu->memory[op2 + cpu->x] = cpu->a;
 			break;
 		case 0x8D:	// Absolute
-			op2 = cpu->memory[++(cpu->pc)];
-			op3 = cpu->memory[++(cpu->pc)];
-
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
 			cpu->memory[litend(op2, op3)] = cpu->a;
+			break;
+		case 0x9D:	// Absolute,X
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			cpu->memory[litend(op2, op3) + cpu->x] = cpu->a;
+			break;
+		case 0x99:	// Absolute,Y
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			cpu->memory[litend(op2, op3) + cpu->y] = cpu->a;
+			break;
+		case 0x81:	// Indirect,X
+			op2 = nextbyte(cpu);
+			op3 = cpu->memory[op2 + cpu->x];		// LSB
+			op2 = cpu->memory[op2 + cpu->x + 1];	// MSB
+			cpu->memory[litend(op3, op2)] = cpu->a;
+			break;
+		case 0x91:	// Indirect,Y
+			op2 = nextbyte(cpu);
+			op3 = cpu->memory[op2];		// LSB
+			op2 = cpu->memory[op2 + 1];	// MSB
+			cpu->memory[litend(op3, op2) + cpu->y] = cpu->a;
+			break;
+
+		// STX
+		case 0x85:	// Zero Page
+			op2 = nextbyte(cpu);
+			cpu->memory[op2] = cpu->x;
+			break;
+		case 0x95:	// Zero Page,Y
+			op2 = nextbyte(cpu);
+			cpu->memory[op2 + cpu->y] = cpu->x;
+			break;
+		case 0x8D:	// Absolute
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			cpu->memory[litend(op2, op3)] = cpu->x;
+			break;
+
+		// STY
+		case 0x85:	// Zero Page
+			op2 = nextbyte(cpu);
+			cpu->memory[op2] = cpu->y;
+			break;
+		case 0x95:	// Zero Page,X
+			op2 = nextbyte(cpu);
+			cpu->memory[op2 + cpu->x] = cpu->y;
+			break;
+		case 0x8D:	// Absolute
+			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
+			cpu->memory[litend(op2, op3)] = cpu->y;
 			break;
 
 		// CLC
@@ -138,3 +209,24 @@ void cpurun(cpu_state *cpu)
 	cpu->pc++;
 }
 
+
+/* adc:  add operand to accumulator, setting carry flag if addition overflows;
+ * and sign flag if result is negative */
+void adc(cpu_state *cpu, int operand)
+{
+	// set carry bit if we overflow uint8_t
+	if ((res = cpu->a + operand) > 0xFF) {
+		res -= 0x100;
+		cpu->flags |= 0x1;
+	}
+	else
+		cpu->flags &= ~0x1;
+
+	// set sign bit if the result is negative
+	if (res > 0x7F)
+		cpu->flags |= 0x80;
+	else
+		cpu->flags &= ~0x80;
+
+	cpu->a = res;
+}

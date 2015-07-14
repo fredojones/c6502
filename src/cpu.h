@@ -16,5 +16,10 @@ typedef struct {
 } cpu_state;
 
 void cpurun(cpu_state *cpu);
+uint8_t nextbyte(cpu_state *cpu);
+void adc(cpu_state *cpu, int operand);
+
+/* return next byte from RAM and increment the program counter */
+#define nextbyte(cpu) ((cpu)->memory[++((cpu)->pc)])
 
 #endif /* CPU_H */
