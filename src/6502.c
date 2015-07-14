@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 		cpu->pc = PCINIT;
 
 		// Execute program
-		while (cpu->pc < 0xFFFF) {
+		for (;;) {
 			/* if in debug mode, step through next logical instruction */
 			if (debug_mode) {
 				char *s = malloc(10);
