@@ -17,13 +17,13 @@ typedef struct {
 
 void cpurun(cpu_state *cpu);
 uint8_t nextbyte(cpu_state *cpu);
-void adc(cpu_state *cpu, int operand);
+void adc(cpu_state *cpu, uint8_t operand);
 
-uint16_t absd(int lsb, int msb);
-uint16_t absx(cpu_state *cpu, int lsb, int msb);
-uint16_t absy(cpu_state *cpu, int lsb, int msb);
-uint16_t indx(cpu_state *cpu, int op);
-uint16_t indy(cpu_state *cpu, int op);
+uint16_t absd(uint8_t lsb, uint8_t msb);
+uint16_t absx(cpu_state *cpu, uint8_t lsb, uint8_t msb);
+uint16_t absy(cpu_state *cpu, uint8_t lsb, uint8_t msb);
+uint16_t indx(cpu_state *cpu, uint8_t op);
+uint16_t indy(cpu_state *cpu, uint8_t op);
 
 /* return next byte from RAM and increment the program counter */
 #define nextbyte(cpu) ((cpu)->memory[++((cpu)->pc)])

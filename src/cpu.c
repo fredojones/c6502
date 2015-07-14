@@ -203,7 +203,7 @@ void cpurun(cpu_state *cpu)
 
 /* adc:  add operand to accumulator, setting carry flag if addition overflows;
  * and sign flag if result is negative */
-void adc(cpu_state *cpu, int operand)
+void adc(cpu_state *cpu, uint8_t operand)
 {
 	uint16_t res;
 	// set carry bit if we overflow uint8_t
@@ -225,26 +225,26 @@ void adc(cpu_state *cpu, int operand)
 
 
 /* Absolute address */
-uint16_t absd(int lsb, int msb)
+uint16_t absd(uint8_t lsb, uint8_t msb)
 {
 	return litend(lsb, msb);
 }
 
 /* Absolute,X; will be absolute + X register */
-uint16_t absx(cpu_state *cpu, int lsb, int msb)
+uint16_t absx(cpu_state *cpu, uint8_t lsb, uint8_t msb)
 {
 	return litend(lsb, msb) + cpu->x;
 }
 
 /* Absolute,X; will be absolute + Y register */
-uint16_t absy(cpu_state *cpu, int lsb, int msb)
+uint16_t absy(cpu_state *cpu, uint8_t lsb, uint8_t msb)
 {
 	return litend(lsb, msb) + cpu->y;
 }
 
 /* Indirect,X: address will be formed of LSB byte at zero page address (op + cpu->x)
  * and MSB byte at (op + cpu->x + 1) */
-uint16_t indx(cpu_state *cpu, int op)
+uint16_t indx(cpu_state *cpu, uint8_t op)
 {
 	uint8_t op2 = cpu->memory[op + cpu->x];		// LSB
 	uint8_t op3 = cpu->memory[op + cpu->x + 1];	// MSB
@@ -253,7 +253,7 @@ uint16_t indx(cpu_state *cpu, int op)
 
 /* Indirect,Y: address will be formed of (LSB byte at zero page address (op)
  * and MSB byte at (op + 1)) with Y register added to final address */
-uint16_t indy(cpu_state *cpu, int op)
+uint16_t indy(cpu_state *cpu, uint8_t op)
 {
 	uint8_t op2 = cpu->memory[op];				// LSB
 	uint8_t op3 = cpu->memory[op + 1];			// MSB
