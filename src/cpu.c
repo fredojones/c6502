@@ -10,7 +10,6 @@ void cpurun(cpu_state *cpu)
 {
 	uint8_t op = cpu->memory[cpu->pc];
 	uint8_t op2, op3;
-	uint16_t res;
 
 	switch (op) {
 		// ADC
@@ -28,27 +27,23 @@ void cpurun(cpu_state *cpu)
 			break;
 		case 0x6D:	// Absolute
 			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
-			adc(cpu, cpu->memory[litend(op2, op3)]);
+			adc(cpu, cpu->memory[absd(op2, op3)]);
 			break;
 		case 0x7D:	// Absolute,X
 			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
-			adc(cpu, cpu->memory[litend(op2, op3) + cpu->x]);
+			adc(cpu, cpu->memory[absx(cpu, op2, op3)]);
 			break;
 		case 0x79:	// Absolute,Y
 			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
-			adc(cpu, cpu->memory[litend(op2, op3) + cpu->y]);
+			adc(cpu, cpu->memory[absy(cpu, op2, op3)]);
 			break;
 		case 0x61:	// Indirect,X
 			op2 = nextbyte(cpu);
-			op3 = cpu->memory[op2 + cpu->x];
-			op2 = cpu->memory[op2 + cpu->x + 1];
-			adc(cpu, cpu->memory[litend(op3, op2)]);
+			adc(cpu, cpu->memory[indx(cpu, op2)]);
 			break;
 		case 0x71:	// Indirect,Y
 			op2 = nextbyte(cpu);
-			op3 = cpu->memory[op2];
-			op2 = cpu->memory[op2 + 1];
-			adc(cpu, cpu->memory[litend(op3, op2) + cpu->y]);
+			adc(cpu, cpu->memory[indy(cpu, op2)]);
 			break;
 
 		// LDA
@@ -117,55 +112,51 @@ void cpurun(cpu_state *cpu)
 			break;
 		case 0x8D:	// Absolute
 			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
-			cpu->memory[litend(op2, op3)] = cpu->a;
+			cpu->memory[absd(op2, op3)] = cpu->a;
 			break;
 		case 0x9D:	// Absolute,X
 			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
-			cpu->memory[litend(op2, op3) + cpu->x] = cpu->a;
+			cpu->memory[absx(cpu, op2, op3)] = cpu->a;
 			break;
 		case 0x99:	// Absolute,Y
 			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
-			cpu->memory[litend(op2, op3) + cpu->y] = cpu->a;
+			cpu->memory[absy(cpu, op2, op3)] = cpu->a;
 			break;
 		case 0x81:	// Indirect,X
 			op2 = nextbyte(cpu);
-			op3 = cpu->memory[op2 + cpu->x];		// LSB
-			op2 = cpu->memory[op2 + cpu->x + 1];	// MSB
-			cpu->memory[litend(op3, op2)] = cpu->a;
+			cpu->memory[indx(cpu, op2)] = cpu->a;
 			break;
 		case 0x91:	// Indirect,Y
 			op2 = nextbyte(cpu);
-			op3 = cpu->memory[op2];		// LSB
-			op2 = cpu->memory[op2 + 1];	// MSB
-			cpu->memory[litend(op3, op2) + cpu->y] = cpu->a;
+			cpu->memory[indy(cpu, op2)] = cpu->a;
 			break;
 
 		// STX
-		case 0x85:	// Zero Page
+		case 0x86:	// Zero Page
 			op2 = nextbyte(cpu);
 			cpu->memory[op2] = cpu->x;
 			break;
-		case 0x95:	// Zero Page,Y
+		case 0x96:	// Zero Page,Y
 			op2 = nextbyte(cpu);
 			cpu->memory[op2 + cpu->y] = cpu->x;
 			break;
-		case 0x8D:	// Absolute
+		case 0x8E:	// Absolute
 			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
-			cpu->memory[litend(op2, op3)] = cpu->x;
+			cpu->memory[absd(op2, op3)] = cpu->x;
 			break;
 
 		// STY
-		case 0x85:	// Zero Page
+		case 0x84:	// Zero Page
 			op2 = nextbyte(cpu);
 			cpu->memory[op2] = cpu->y;
 			break;
-		case 0x95:	// Zero Page,X
+		case 0x94:	// Zero Page,X
 			op2 = nextbyte(cpu);
 			cpu->memory[op2 + cpu->x] = cpu->y;
 			break;
-		case 0x8D:	// Absolute
+		case 0x8C:	// Absolute
 			op2 = nextbyte(cpu), op3 = nextbyte(cpu);
-			cpu->memory[litend(op2, op3)] = cpu->y;
+			cpu->memory[absd(op2, op3)] = cpu->y;
 			break;
 
 		// CLC
@@ -214,6 +205,7 @@ void cpurun(cpu_state *cpu)
  * and sign flag if result is negative */
 void adc(cpu_state *cpu, int operand)
 {
+	uint16_t res;
 	// set carry bit if we overflow uint8_t
 	if ((res = cpu->a + operand) > 0xFF) {
 		res -= 0x100;
@@ -229,4 +221,41 @@ void adc(cpu_state *cpu, int operand)
 		cpu->flags &= ~0x80;
 
 	cpu->a = res;
+}
+
+
+/* Absolute address */
+uint16_t absd(int lsb, int msb)
+{
+	return litend(lsb, msb);
+}
+
+/* Absolute,X; will be absolute + X register */
+uint16_t absx(cpu_state *cpu, int lsb, int msb)
+{
+	return litend(lsb, msb) + cpu->x;
+}
+
+/* Absolute,X; will be absolute + Y register */
+uint16_t absy(cpu_state *cpu, int lsb, int msb)
+{
+	return litend(lsb, msb) + cpu->y;
+}
+
+/* Indirect,X: address will be formed of LSB byte at zero page address (op + cpu->x)
+ * and MSB byte at (op + cpu->x + 1) */
+uint16_t indx(cpu_state *cpu, int op)
+{
+	uint8_t op2 = cpu->memory[op + cpu->x];		// LSB
+	uint8_t op3 = cpu->memory[op + cpu->x + 1];	// MSB
+	return litend(op2, op3);
+}
+
+/* Indirect,Y: address will be formed of (LSB byte at zero page address (op)
+ * and MSB byte at (op + 1)) with Y register added to final address */
+uint16_t indy(cpu_state *cpu, int op)
+{
+	uint8_t op2 = cpu->memory[op];				// LSB
+	uint8_t op3 = cpu->memory[op + 1];			// MSB
+	return litend(op2, op3) + cpu->y;
 }
